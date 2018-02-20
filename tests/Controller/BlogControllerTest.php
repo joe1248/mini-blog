@@ -2,8 +2,8 @@
 
 namespace App\Tests\Controller;
 
-//use App\DataFixtures\ArticleFixtures;
-//use Doctrine\Common\DataFixtures\ReferenceRepository;
+use App\DataFixtures\ArticleFixtures;
+use Doctrine\Common\DataFixtures\ReferenceRepository;
 use Liip\FunctionalTestBundle\Test\WebTestCase;
 
 class BlogControllerTest extends WebTestCase
@@ -11,15 +11,15 @@ class BlogControllerTest extends WebTestCase
     protected $kernelDir = '/app';
 
     /** @var ReferenceRepository */
-    //private $fixtures;
+    private $fixtures;
 
     public function setUp()
     {
-        /*$this->fixtures = $this->loadFixtures(
+        $this->fixtures = $this->loadFixtures(
             [
-                //articleFixtures::class,
+                ArticleFixtures::class,
             ]
-        )->getReferenceRepository();*/
+        )->getReferenceRepository();
     }
 
     public function testGetRootHelloWorld()
@@ -32,6 +32,37 @@ class BlogControllerTest extends WebTestCase
 
         $this->assertEquals('Hello World', $data['example']);
     }
+
+    public function testGetAllFirstPage()
+    {
+        $client = $this->makeClient(true);
+        $client->request('GET', '/articles');
+        $this->assertStatusCode(200, $client);
+
+        $data = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertEquals(4, count($data['articles']));
+        $this->assertEquals('/articles/1/3', $data['next']);
+        $firstArticle = $data['articles'][0];
+
+        $this->assertArrayHasKey('title', $firstArticle);
+        $this->assertArrayHasKey('content', $firstArticle);
+        $this->assertArrayHasKey('createdAt', $firstArticle);
+        $this->assertEquals('2018-02-13 22:40:41', $firstArticle['createdAt']);
+    }
+
+    public function testGetAllLastPage()
+    {
+        $client = $this->makeClient(true);
+        $client->request('GET', '/articles/3/3');
+        $this->assertStatusCode(200, $client);
+
+        $data = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertEquals(2, count($data['articles']));
+        $this->assertEquals(null, $data['next']);
+    }
+
     /*
     public function testGetFeatured()
     {
