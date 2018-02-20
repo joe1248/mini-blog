@@ -1,0 +1,9 @@
+version: "3"
+services:
+  blog_web_server:
+    build: .
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ".:/var/www/html"
