@@ -5,9 +5,9 @@
     "license": "UNLICENSED",
     "private": true,
     "scripts": {
-        "dev-server": "encore dev-server",
-        "dev": "encore dev",
-        "watch": "encore dev --watch",
-        "build": "encore production"
+        "test": "./bin/phpunit --stop-on-failure",
+        "//UnitSuiteNotReadyYet": "test-unit: ./bin/phpunit --stop-on-failure --testsuite=unit  --whitelist=src/ --coverage-text=tests/reports/unitTestsCoverage.txt",
+        "//IntegrationSuiteNotReadyYet": "test-slow: ./bin/phpunit --stop-on-failure --testsuite=integration --whitelist=src/Controller/ --coverage-text=tests/reports/integrationTestsCoverage.txt",
+        "test-dev": "./bin/phpunit --stop-on-failure ./tests/IntegrationTests/Controller/BookControllerTest.php"
     }
 }

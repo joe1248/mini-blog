@@ -22,27 +22,28 @@ class BlogControllerTest extends WebTestCase
         )->getReferenceRepository();
     }
 
-    public function testGetRootHelloWorld()
+    public function testGetPageNotFound()
     {
         $client = $this->makeClient(true);
-        $client->request('GET', '/');
+        $client->request('GET', '/PageNotFoundAnywhere');
         $this->assertStatusCode(200, $client);
 
-        $data = json_decode($client->getResponse()->getContent(), true);
-
-        $this->assertEquals('Hello World', $data['example']);
+        $this->assertEquals(
+            '{"error":{"code":400,"message":"Page not found"}}',
+            $client->getResponse()->getContent()
+            );
     }
 
     public function testGetAllFirstPage()
     {
         $client = $this->makeClient(true);
-        $client->request('GET', '/articles');
+        $client->request('GET', '/articles/1/2');
         $this->assertStatusCode(200, $client);
 
         $data = json_decode($client->getResponse()->getContent(), true);
 
-        $this->assertEquals(4, count($data['articles']));
-        $this->assertEquals('/articles/1/3', $data['next']);
+        $this->assertEquals(2, count($data['articles']));
+        $this->assertEquals('/articles/2/2', $data['next']);
         $firstArticle = $data['articles'][0];
 
         $this->assertArrayHasKey('title', $firstArticle);
@@ -51,15 +52,29 @@ class BlogControllerTest extends WebTestCase
         $this->assertEquals('2018-02-13 22:40:41', $firstArticle['createdAt']);
     }
 
-    public function testGetAllLastPage()
+    public function testGetAllSecondPage()
     {
         $client = $this->makeClient(true);
-        $client->request('GET', '/articles/3/3');
+        $client->request('GET', '/articles/2/2');
         $this->assertStatusCode(200, $client);
 
         $data = json_decode($client->getResponse()->getContent(), true);
 
         $this->assertEquals(2, count($data['articles']));
+        $this->assertEquals('/articles/1/2', $data['prev']);
+        $this->assertEquals('/articles/3/2', $data['next']);
+    }
+
+    public function testGetAllLastPage()
+    {
+        $client = $this->makeClient(true);
+        $client->request('GET', '/articles/3/2');
+        $this->assertStatusCode(200, $client);
+
+        $data = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertEquals(1, count($data['articles']));
+        $this->assertEquals('/articles/2/2', $data['prev']);
         $this->assertEquals(null, $data['next']);
     }
 

@@ -68,6 +68,7 @@ RUN composer install --no-interaction --no-scripts --no-autoloader --no-plugins
 COPY config/docker/php.ini /usr/local/etc/php/conf.d/
     # copy HTTPD.conf ini file to configure Apache
 COPY config/docker/httpd.conf /etc/apache2/sites-enabled/000-default.conf
+RUN echo 'ServerName localhost' > /etc/apache2/conf-enabled/AAserverName
 
 # Including apache expires module
 RUN ln -s /etc/apache2/mods-available/expires.load /etc/apache2/mods-enabled/
@@ -80,10 +81,23 @@ RUN a2enmod rewrite
 # Copy the App
 COPY . ./
 
+RUN HTTPDUSER=`ps aux | grep -E '[a]pache|[h]ttpd|[_]www|[w]ww-data|[n]ginx' | grep -v root | head -1 | cut -d\  -f1` \
+	&& echo "APACHE USER IS $HTTPDUSER" \
+	&& rm -rf var/log \
+	&& mkdir var/log \
+	&& mkdir var/log/dev \
+	&& chown www-data var/log -R \
+	&& chmod 777 -R var/log \
+	&& rm -rf var/cache \
+	&& mkdir var/cache \
+	&& mkdir var/cache/dev \
+	&& chown www-data var/cache -R \
+	&& chmod 777 -R var/cache
+	
 # generate autoloader MUST BE DONE AFTER COPYING THE APP
 RUN composer dump-autoload --optimize
 
 # DELETE IN PRODUCTION
 RUN echo '<?php phpinfo();' > ./public/info.php
 
-EXPOSE 80 443
+EXPOSE 80 443 8000

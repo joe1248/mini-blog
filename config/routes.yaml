@@ -1,3 +1,1 @@
-#index:
-#    path: /
-#    controller: App\Controller\DefaultController::index
+# see annotations in each controller in 'src/Controller' folder.
