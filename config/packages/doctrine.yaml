@@ -25,3 +25,8 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
+        # We need this the dql property to register the custom doctrine functions :
+        dql:
+            string_functions:
+                # Match agains should have the path to the MatchAgainst class created in the previous step
+                MATCH_AGAINST: App\Extensions\Doctrine\MatchAgainst

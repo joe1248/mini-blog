@@ -6,15 +6,18 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * @ORM\Table(name="articles")
  * @ORM\Entity(repositoryClass="App\Repository\ArticleRepository")
+ * @ORM\Table(name="articles", indexes={
+ *     @ORM\Index(columns={"title"},flags={"fulltext"}),
+ *     @ORM\Index(columns={"title","content"},flags={"fulltext"})
+ * })
  */
 class Article
 {
     /**
-     * @ORM\Column(type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @ORM\Column(type="integer")
      */
     private $id;
     /**
@@ -50,22 +53,34 @@ class Article
     }
 
     /**
+     * @param array $attributesList
+     *
      * @return array
      */
-    public function getAttributes(): array
+    public function getAttributes(array $attributesList = []): array
     {
-        return [
+        $attributes = [
             'id' => $this->id,
             'title' => $this->title,
             'content' => $this->content,
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
         ];
+        if (count($attributesList) == 0) {
+            return $attributes;
+        }
+        return array_filter(
+            $attributes,
+            function ($key) use ($attributesList) {
+                return in_array($key, $attributesList);
+            },
+            ARRAY_FILTER_USE_KEY
+        );
     }
 
     /**
      * @return int
      */
-    public function getId(): int
+    public function id(): int
     {
         return $this->id;
     }
