@@ -15,6 +15,7 @@ LABEL maintainer "josephbarban@gmail.com"
 # Update OS, add some tools and nodeJS which includes NPM
 RUN apt-get update \
     && apt-get install -y \
+    vim \
     apt-utils \
     # net-tools needed to be able to test network interfaces: netstat -tlnp
     net-tools \
@@ -28,18 +29,24 @@ RUN apt-get update \
     wget \
     gnupg \
     && curl -sL https://deb.nodesource.com/setup_8.x | bash - \
-    && apt-get install -y nodejs
+    && apt-get install -y nodejs \
+    && apt-get install -y redis-server
 
 # get PHP extensions and composer
 RUN docker-php-ext-install \
     pdo_mysql \
     # zip extension needed by phpunit
     zip \
-    && pecl install xdebug \
+	# Redis extension
+	&& pecl install -o -f redis \
+	# XDebug extension
+	&& pecl install xdebug \
     && docker-php-ext-enable \
     xdebug \
+	redis \
     && php -r "readfile('https://getcomposer.org/installer');" | php -- --install-dir=/usr/local/bin --filename=composer \
-	&& chmod +sx /usr/local/bin/composer
+	&& chmod +sx /usr/local/bin/composer \
+	&& rm -rf /tmp/pear
 
 # Copy composer files
 COPY composer.json ./
@@ -92,8 +99,14 @@ RUN HTTPDUSER=`ps aux | grep -E '[a]pache|[h]ttpd|[_]www|[w]ww-data|[n]ginx' | g
 	&& mkdir var/cache \
 	&& mkdir var/cache/dev \
 	&& chown www-data var/cache -R \
-	&& chmod 777 -R var/cache
-	
+	&& chmod 777 -R var/cache \
+	&& adduser www-data redis \
+	&& chmod 770 /run/redis/redis.sock \
+	&& echo 'unixsocket /var/run/redis/redis.sock' >> /etc/redis/redis.conf \
+# unixsocketperm 700
+	&& echo never > /sys/kernel/mm/transparent_hugepage/enabled \
+	&& /etc/init.d/redis-server start /etc/redis/redis.conf
+
 # generate autoloader MUST BE DONE AFTER COPYING THE APP
 RUN composer dump-autoload --optimize
 

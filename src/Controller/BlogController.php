@@ -5,14 +5,56 @@ namespace App\Controller;
 use App\Business\ArticleService;
 use App\Entity\Article;
 use App\Repository\ArticleRepository;
-use Symfony\Component\Routing\Annotation\Route;
+use App\Repository\RepositoryHelper;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
+use Doctrine\Common\Cache\RedisCache;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class BlogController extends Controller
 {
     const MAX_LIMIT_NUMBER_OF_FEATURED_ARTICLES = 50;
+
+
+    /**
+     * Get one article
+     *
+     * @param String $id
+     * @param RepositoryHelper $repositoryHelper
+	 *
+     * @return JsonResponse
+	 *
+	 * @Route("/article/{id}", name="article_view")
+	 * @Method({"GET"})
+	 */
+	public function getOne(String $id, RepositoryHelper $repositoryHelper): JsonResponse
+	{
+        /** @var ArticleRepository $articleRepository */
+        $articleRepository = $this->getDoctrine()->getRepository(Article::class);
+
+        $cacheKey = 'article-' . $id;
+
+        /**
+         * @param $cacheDriver
+         *
+         * @return array
+         */
+        $realSearchQuery = function(RedisCache $cacheDriver) use ($id, $cacheKey, $articleRepository) {
+
+            /** @var Article $article */
+            $article = $articleRepository->find($id);
+            $articleProps = $article->getAttributes();
+            $cacheDriver->save($cacheKey, $articleProps, 60);
+
+            return $articleProps;
+        };
+
+        /** @var array $articleProps */
+        $articleProps = $repositoryHelper->fetchOrCreate($cacheKey, $realSearchQuery);
+
+        return new JsonResponse($articleProps);
+	}
 
     /**
      * List all articles ordered by date DESC
@@ -21,18 +63,20 @@ class BlogController extends Controller
      * @param string $limit
      * @param ArticleService $articleService
      * @param ControllerHelper $controllerHelper
+     * @param RepositoryHelper $repositoryHelper
      *
      * @return JsonResponse
      *
      * @Route("/")
-     * @Route("/articles/{page}/{limit}", requirements={"page" = "\d+", "limit" = "\d+"})
+     * @Route("/articles/{page}/{limit}", requirements={"page" = "\d+", "limit" = "\d+"}, name="articles_list")
      * @Method({"GET"})
      */
     public function getAll(
         string $page = '1',
         string $limit = '3',
         ArticleService $articleService,
-        ControllerHelper $controllerHelper
+        ControllerHelper $controllerHelper,
+        RepositoryHelper $repositoryHelper
     ): JsonResponse
     {
         $limit = (int) $limit;
@@ -49,12 +93,12 @@ class BlogController extends Controller
         $articleRepository = $this->getDoctrine()->getRepository(Article::class);
 
         /** @var Article[] $articles */
-        $articles = $articleService->getAll($articleRepository, $page, $limit);
+        $articles = $articleService->getAll($repositoryHelper, $articleRepository, $page, $limit);
 
         /** @var bool $isLastPage */
         $isLastPage = count($articles) !== $limit + 1;
 
-        return new JsonResponse([
+		return new JsonResponse([
             'articles' => $isLastPage ? $articles : array_slice($articles, 0,count($articles) - 1),
             'prev' => $page <= 1 ? null : '/articles/' . ($page - 1) . '/' . $limit,
             'next' => $isLastPage ? null : '/articles/' . ($page + 1) . '/' . $limit,
@@ -66,6 +110,7 @@ class BlogController extends Controller
      *
      * @param string $words
      * @param ArticleService $articleService
+     * @param RepositoryHelper $repositoryHelper
      *
      * @return JsonResponse
      *
@@ -74,17 +119,16 @@ class BlogController extends Controller
      */
     public function searchByTitleAndContent(
         string $words,
-        ArticleService $articleService
+        ArticleService $articleService,
+        RepositoryHelper $repositoryHelper
     ): JsonResponse
     {
         /** @var ArticleRepository $articleRepository */
         $articleRepository = $this->getDoctrine()->getRepository(Article::class);
 
         /** @var Article[] $articles */
-        $articles = $articleService->searchByTitleAndContent($articleRepository, $words);
+        $articles = $articleService->searchByTitleAndContent($repositoryHelper, $articleRepository, $words);
 
-        return new JsonResponse([
-            'articles' => $articles
-        ]);
+        return new JsonResponse($articles);
     }
 }

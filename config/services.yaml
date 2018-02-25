@@ -26,3 +26,26 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # Subscribe to kernel.response event so we always send CORS headers
+    App.listener.cors:
+      class: App\Listeners\CorsListener
+      tags:
+        - { name: kernel.event_listener, event: kernel.response, method: onKernelResponse }
+
+    redis_cache_service:
+        class: Doctrine\Common\Cache\RedisCache
+        calls:
+            - method: setRedis
+              arguments:
+                - '@redis'
+    redis:
+        class: Redis
+        public: false
+        calls:
+            - method: connect
+              arguments:
+                - '/var/run/redis/redis.sock'
+            - method: select
+              arguments:
+                - 13 # change database by index
