@@ -29,8 +29,7 @@ RUN apt-get update \
     wget \
     gnupg \
     && curl -sL https://deb.nodesource.com/setup_8.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get install -y redis-server
+    && apt-get install -y nodejs
 
 # get PHP extensions and composer
 RUN docker-php-ext-install \
@@ -89,7 +88,7 @@ RUN a2enmod rewrite
 COPY . ./
 
 RUN HTTPDUSER=`ps aux | grep -E '[a]pache|[h]ttpd|[_]www|[w]ww-data|[n]ginx' | grep -v root | head -1 | cut -d\  -f1` \
-	&& echo "APACHE USER IS $HTTPDUSER" \
+	&& echo "APACHE USER IS $(HTTPDUSER)" \
 	&& rm -rf var/log \
 	&& mkdir var/log \
 	&& mkdir var/log/dev \
@@ -99,18 +98,9 @@ RUN HTTPDUSER=`ps aux | grep -E '[a]pache|[h]ttpd|[_]www|[w]ww-data|[n]ginx' | g
 	&& mkdir var/cache \
 	&& mkdir var/cache/dev \
 	&& chown www-data var/cache -R \
-	&& chmod 777 -R var/cache \
-	&& adduser www-data redis \
-	&& chmod 770 /run/redis/redis.sock \
-	&& echo 'unixsocket /var/run/redis/redis.sock' >> /etc/redis/redis.conf \
-# unixsocketperm 700
-	&& echo never > /sys/kernel/mm/transparent_hugepage/enabled \
-	&& /etc/init.d/redis-server start /etc/redis/redis.conf
+	&& chmod 777 -R var/cache
 
 # generate autoloader MUST BE DONE AFTER COPYING THE APP
 RUN composer dump-autoload --optimize
 
-# DELETE IN PRODUCTION
-RUN echo '<?php phpinfo();' > ./public/info.php
-
-EXPOSE 80 443 8000
+EXPOSE 80 443

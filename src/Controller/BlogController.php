@@ -8,7 +8,6 @@ use App\Repository\ArticleRepository;
 use App\Repository\RepositoryHelper;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Doctrine\Common\Cache\RedisCache;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -36,18 +35,14 @@ class BlogController extends Controller
         $cacheKey = 'article-' . $id;
 
         /**
-         * @param $cacheDriver
-         *
          * @return array
          */
-        $realSearchQuery = function(RedisCache $cacheDriver) use ($id, $cacheKey, $articleRepository) {
-
+        $realSearchQuery = function() use ($id, $cacheKey, $articleRepository) : array
+        {
             /** @var Article $article */
             $article = $articleRepository->find($id);
-            $articleProps = $article->getAttributes();
-            $cacheDriver->save($cacheKey, $articleProps, 60);
 
-            return $articleProps;
+            return $article->getAttributes();
         };
 
         /** @var array $articleProps */
@@ -100,8 +95,9 @@ class BlogController extends Controller
 
 		return new JsonResponse([
             'articles' => $isLastPage ? $articles : array_slice($articles, 0,count($articles) - 1),
-            'prev' => $page <= 1 ? null : '/articles/' . ($page - 1) . '/' . $limit,
-            'next' => $isLastPage ? null : '/articles/' . ($page + 1) . '/' . $limit,
+            'prev' => $page <= 1 ? '' : '/articles/' . ($page - 1) . '/' . $limit,
+            'next' => $isLastPage ? '' : '/articles/' . ($page + 1) . '/' . $limit,
+            'numberOfPages' => ceil($articleService->getCount($repositoryHelper, $articleRepository) / $limit),
         ]);
     }
 

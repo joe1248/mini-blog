@@ -30,19 +30,16 @@ class ArticleService
         $cacheKey = 'articles-' . $offset . '-' . $limit;
 
         /**
-         * @param $cacheDriver
          * @return array
          */
-        $realSearchQuery = function(RedisCache $cacheDriver) use ($offset, $limit, $cacheKey, $articleRepository) {
-            $results = $articleRepository->findBy([
-                    'deleted' => false
-                ],
+        $realSearchQuery = function() use ($offset, $limit, $cacheKey, $articleRepository): array
+        {
+            $results = $articleRepository->findBy(
+                ['deleted' => false],
                 ['createdAt' => 'DESC'],
                 $limit + 1, // +1 so as we get one extra element to check if more pages are after that one.
                 $offset
             );
-            $cacheDriver->save($cacheKey, $results, 60);
-
             return $results;
         };
 
@@ -50,9 +47,7 @@ class ArticleService
         $articles = $repositoryHelper->fetchOrCreate($cacheKey, $realSearchQuery);
 
         return array_map(
-            function (Article $article) {
-                return $article->getAttributes();
-            },
+            function (Article $article): array {  return $article->getAttributes(); },
             $articles
         );
     }
@@ -71,5 +66,19 @@ class ArticleService
     ): array
     {
         return $articleRepository->searchByTitleAndContent($repositoryHelper, $searchedWord);
+    }
+
+    /**
+     * @param RepositoryHelper | MockObject $repositoryHelper
+     * @param ArticleRepository | MockObject $articleRepository
+     *
+     * @return int
+     */
+    public function getCount(
+        RepositoryHelper $repositoryHelper,
+        ArticleRepository $articleRepository
+    ): int
+    {
+        return $articleRepository->getCount($repositoryHelper);
     }
 }

@@ -3,27 +3,16 @@ parameters:
     # This allows you to run cache:warmup even if your
     # environment variables are not available yet.
     # You should not need to change this value.
-    env(DATABASE_URL): ''
+    env(DATABASE_URL): 'sqlite:///%kernel.project_dir%/var/app.db'
 
 doctrine:
     dbal:
-        # configure these for your database server
         driver: 'pdo_mysql'
         server_version: '5.7'
         charset: utf8mb4
-
-        # With Symfony 3.3, remove the `resolve:` prefix
+        # database server URL is in .env file
         url: '%env(resolve:DATABASE_URL)%'
     orm:
-        metadata_cache_driver:
-            type: service
-            id: redis_cache_service
-        result_cache_driver:
-            type: service
-            id: redis_cache_service
-        query_cache_driver:
-            type: service
-            id: redis_cache_service
         auto_generate_proxy_classes: '%kernel.debug%'
         naming_strategy: doctrine.orm.naming_strategy.underscore
         auto_mapping: true
@@ -34,8 +23,17 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
-        # We need this the dql property to register the custom doctrine functions :
+        # Register the custom doctrine functions
         dql:
             string_functions:
-                # Match agains should have the path to the MatchAgainst class created in the previous step
                 MATCH_AGAINST: App\Extensions\Doctrine\MatchAgainst
+        # Doctrine caches
+        metadata_cache_driver:
+            type: service
+            id: redis_cache_service
+        result_cache_driver:
+            type: service
+            id: redis_cache_service
+        query_cache_driver:
+            type: service
+            id: redis_cache_service

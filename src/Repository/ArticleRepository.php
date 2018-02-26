@@ -2,7 +2,6 @@
 namespace App\Repository;
 
 use Doctrine\ORM\EntityRepository;
-use Doctrine\Common\Cache\RedisCache;
 
 class ArticleRepository extends EntityRepository
 {
@@ -18,7 +17,11 @@ class ArticleRepository extends EntityRepository
     {
         $cacheKey = 'search-' . $searchedWord;
 
-        $realSearchQuery = function(RedisCache $cacheDriver) use ($searchedWord, $cacheKey) {
+        /**
+         * @return array
+         */
+        $realSearchQuery = function() use ($searchedWord, $cacheKey): array
+        {
             /** @var array $results */
             $results = $this->createQueryBuilder('p')
                 ->select(
@@ -34,11 +37,35 @@ class ArticleRepository extends EntityRepository
                 ->setFirstResult(0)
                 ->setMaxResults(self::MAX_LIMIT_SEARCH_RESULTS)
                 ->getArrayResult();
-            $cacheDriver->save($cacheKey, $results, 60);
 
             return $results;
         };
 
         return $repositoryHelper->fetchOrCreate($cacheKey, $realSearchQuery);
+    }
+
+    /**
+     * @param RepositoryHelper $repositoryHelper
+     *
+     * @return int
+     */
+    public function getCount(RepositoryHelper $repositoryHelper): int
+    {
+        $cacheKey = 'articles_count';
+
+        $realSearchQuery = function() use ($cacheKey): array
+        {
+            /** @var int $count */
+            $count = $this->createQueryBuilder('p')
+                ->select('count(1)')
+                ->where("p.deleted = false")
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            return ['articles_count' => $count];
+        };
+        $articlesCount = $repositoryHelper->fetchOrCreate($cacheKey, $realSearchQuery);
+
+        return $articlesCount['articles_count'];
     }
 }

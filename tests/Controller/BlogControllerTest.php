@@ -49,7 +49,7 @@ class BlogControllerTest extends WebTestCase
         $this->assertArrayHasKey('title', $firstArticle);
         $this->assertArrayHasKey('content', $firstArticle);
         $this->assertArrayHasKey('createdAt', $firstArticle);
-        $this->assertEquals('2018-02-13 22:40:41', $firstArticle['createdAt']);
+        $this->assertEquals('2018-02-24 22:40:41', $firstArticle['createdAt']);
     }
 
     public function testGetAllSecondPage()

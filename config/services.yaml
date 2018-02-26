@@ -45,7 +45,4 @@ services:
         calls:
             - method: connect
               arguments:
-                - '/var/run/redis/redis.sock'
-            - method: select
-              arguments:
-                - 13 # change database by index
+                - 'redis_database_server'

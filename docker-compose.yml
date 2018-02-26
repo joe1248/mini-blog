@@ -7,10 +7,24 @@ services:
       - "80:80"
     volumes:
       - ".:/var/www/html"
-    extra_hosts:
-      - "localhost:127.0.0.1"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 1m30s
       timeout: 10s
       retries: 3
+    networks:
+      - net
+    depends_on:
+      - redis_database_server
+
+  redis_database_server:
+    image: redis:latest
+    command: redis-server
+    volumes:
+      - ../redis-data:/var/lib/redis
+    networks:
+      - net
+
+networks:
+  net:
+    driver: bridge

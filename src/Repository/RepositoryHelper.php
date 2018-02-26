@@ -6,10 +6,17 @@ use Doctrine\Common\Cache\RedisCache;
 
 class RepositoryHelper
 {
-    public function fetchOrCreate(string $cacheKey, $callback): array
+    const REDIS_DEFAULT_LIFETIME = 3600 * 24; // one day
+    /**
+     * @param string $cacheKey
+     * @param callable $callback
+     *
+     * @return array
+     */
+    public function fetchOrCreate(string $cacheKey, callable $callback): array
     {
         $redis = new Redis();
-        $redis->connect('/var/run/redis/redis.sock');
+        $redis->connect('redis_database_server');
 
         $cacheDriver = new RedisCache();
         $cacheDriver->setRedis($redis);
@@ -17,6 +24,10 @@ class RepositoryHelper
         if ($cacheDriver->contains($cacheKey)) {
             return $cacheDriver->fetch($cacheKey);
         }
-        return $callback($cacheDriver);
+
+        $results = $callback($cacheDriver);
+        $cacheDriver->save($cacheKey, $results, self::REDIS_DEFAULT_LIFETIME);
+
+        return $results;
     }
 }
