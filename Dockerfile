@@ -1,8 +1,16 @@
-# Prerequisite : git clone ...
+# Prerequisite : git clone https://github.com/joe1248/mini-blog.git
 
-# USING it:
-# docker build -t my_image .
-# docker run -d -p80:80 --rm --name my_web_server my_image
+# 1. build image
+# docker build --tag joseph1248/mini-blog-be:latest --tag joseph1248/mini-blog-be:v1.0 .
+# 2. create and run detached container from image
+# docker-compose up         Until you skip silently Redis not there (or integrate it...) docker run -d -p80:80 --rm --name blog-be joseph1248/mini-blog-be:latest
+# 3. get inside the container
+# winpty docker exec -ti blog-be bash
+# 4. run tests
+# npm run tests
+
+# winpty docker login
+# docker push joseph1248/mini-blog-be
 
 #-------------------------------------------------------------------------
 
@@ -54,21 +62,6 @@ COPY composer.lock ./
 # install Back-End dependencies
 RUN composer install --no-interaction --no-scripts --no-autoloader --no-plugins
 
-# Copy NPM files
-#COPY package.json ./
-#COPY package-lock.json ./
-
-# install Front-End dependencies
-#RUN npm install --ignore-scripts --unsafe-perm
-
-# BUILD FRONT-end minimized assets
-#COPY assets ./assets
-#COPY public ./public
-#COPY .babelrc ./
-#COPY tsconfig.json ./
-#COPY webpack.config.js ./
-#RUN npm run dev
-
 # copy Server configuration files
     # copy PHP ini file to configure PHP
 COPY config/docker/php.ini /usr/local/etc/php/conf.d/
@@ -88,7 +81,7 @@ RUN a2enmod rewrite
 COPY . ./
 
 RUN HTTPDUSER=`ps aux | grep -E '[a]pache|[h]ttpd|[_]www|[w]ww-data|[n]ginx' | grep -v root | head -1 | cut -d\  -f1` \
-	&& echo "APACHE USER IS $(HTTPDUSER)" \
+	&& echo "APACHE USER IS $HTTPDUSER" \
 	&& rm -rf var/log \
 	&& mkdir var/log \
 	&& mkdir var/log/dev \
@@ -99,7 +92,7 @@ RUN HTTPDUSER=`ps aux | grep -E '[a]pache|[h]ttpd|[_]www|[w]ww-data|[n]ginx' | g
 	&& mkdir var/cache/dev \
 	&& chown www-data var/cache -R \
 	&& chmod 777 -R var/cache
-
+	
 # generate autoloader MUST BE DONE AFTER COPYING THE APP
 RUN composer dump-autoload --optimize
 
